@@ -2,19 +2,17 @@
 
 API desarrollada en **FastAPI** para análisis y comparación de sesiones geográficas usando clustering y métricas de movimiento.
 
----
+## Instalación:
 
-## Requisitos
+### Requisitos
 
 - Python **3.9**
 - Git
 - curl o PowerShell
 
----
+### 🐍 Instalación de Python 3.9
 
-## 🐍 Instalación de Python 3.9
-
-### 🔧 En Windows
+#### 🔧 En Windows
 
 1. Ir a [https://www.python.org/downloads/release/python-390/](https://www.python.org/downloads/release/python-390/)
 2. Descargar el instalador de Windows (ej: `Windows installer (64-bit)`)
@@ -27,11 +25,9 @@ Verificá la instalación con:
 python --version
 ```
 
----
+### 📦 Instalación de Poetry
 
-## 📦 Instalación de Poetry
-
-### 🚀 Configuración del entorno con Poetry
+**🚀 Configuración del entorno con Poetry**
 
 Este proyecto utiliza [**Poetry**](https://python-poetry.org/) para la gestión de dependencias y entornos virtuales en Python.
 
@@ -48,21 +44,63 @@ Verificá la instalación con:
 poetry --version
 ```
 
-## 📁 Clonar este repositorio
+### 📁 Clonar este repositorio
 
 ```bash
 git clone https://github.com/tu_usuario/tu_repositorio.git
 cd tu_repositorio
 ```
 
-## 🧩 Instalar dependencias del proyecto
+### 🧩 Instalar dependencias del proyecto
 
 ```bash
 poetry install
 ```
 
-## 🌐 Ejecutar la API
+### 🌐 Ejecutar la API
 
 ```bash
 poetry run uvicorn main:app --host 0.0.0.0 --port 8000
 ```
+
+## 📡 API Endpoints
+
+La API expone los siguientes endpoints para análisis de sesiones geográficas y clustering:
+
+### 🔍 **Health checks**
+
+|Método|Endpoint|Descripción|
+|---|---|---|
+|`GET`|`/health`|Verifica que la API esté en funcionamiento.|
+|`GET`|`/health/velocity`|Ejecuta una comparación simulada de sesiones (métrica de geovelocidad).|
+|`GET`|`/health/cluster`|Ejecuta un clustering simulado de sesiones y lo categoriza.|
+
+---
+
+### 🚦 **Comparación de sesiones**
+
+|Método|Endpoint|Descripción|
+|---|---|---|
+|`POST`|`/velocity/compare-last`|Compara una nueva sesión con la última sesión conocida del usuario.|
+|`POST`|`/velocity/compare-all`|Compara una lista de sesiones consecutivas y calcula distancia, tiempo y velocidad entre cada par.|
+
+**Ejemplo de uso:**
+
+- Calcular si un nuevo movimiento fue demasiado rápido para ser realista.
+    
+- Medir cambios de ubicación entre sesiones para detección de anomalías.
+    
+
+---
+
+### 🧭 **Clustering geográfico**
+
+|Método|Endpoint|Descripción|
+|---|---|---|
+|`POST`|`/geo/cluster-categorize`|Aplica clustering (DBSCAN) a una lista de sesiones y clasifica cada una como `principal`, `secundario` o `ruido`.|
+
+**Ejemplo de uso:**
+
+- Determinar si una sesión pertenece al comportamiento geográfico habitual del usuario.
+    
+- Detectar ubicaciones anómalas o fuera del patrón.
