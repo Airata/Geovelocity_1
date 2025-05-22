@@ -1,15 +1,28 @@
 # ---------- Imports ----------
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from datetime import datetime
-from typing import List
+from shapely.geometry import Polygon, Point
+from datetime import datetime, timedelta
+from typing import List, Dict
 from geo_metrics_utils import GeoMetricsUtils
 from geo_cluster_analyzer import GeoClusterAnalyzer
+from geo_scoring_evaluator import GeoScoringEvaluator
 
 # ---------- FastAPI App ----------
 app = FastAPI()
 
 # ---------- Input Schemas ----------
+# ---------- Modelos de entrada ----------
+class MetricasZona(BaseModel):
+    velocidad_media_kmh: float
+    tiempo_medio: float # en horas
+    distancia_media_km: float
+
+class ZonaFrecuente(BaseModel):
+    zone_id: str
+    polygon: List[List[float]]  # lista de [lon, lat]
+    metricas: MetricasZona 
+    
 class SessionInput(BaseModel):
     user_id: str
     session_id: str
@@ -92,6 +105,36 @@ def cluster_health_check():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"GeoClusterAnalyzer failed: {str(e)}")
+    
+@app.get("/health/scoring_val")
+def scoring_val_health_check():
+    zona = {
+        "zone_id": "zona_1",
+        "geometry": Polygon([
+            (-58.40, -34.61),
+            (-58.39, -34.61),
+            (-58.39, -34.60),
+            (-58.40, -34.60),
+            (-58.40, -34.61)
+        ]),
+        "metricas": {
+            "velocidad_media_kmh": 30,
+            "tiempo_medio": timedelta(hours=2),
+            "distancia_media_km": 5
+        }
+    }
+
+    sesion = {
+        "lat": -34.605,
+        "lon": -58.395,
+        "velocidad_kmh": 32,
+        "tiempo_entre_sesiones": timedelta(hours=1.5),
+        "distancia_km": 4.8
+    }
+
+    evaluator = GeoScoringEvaluator()
+    result = evaluator.evaluate_session(sesion, [zona])
+    return result
 
 # ---------- Main Endpoints ----------
 @app.post("/velocity/compare-last")
@@ -191,3 +234,29 @@ def categorize_clusters(payload: ClusterSessionListInput):
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@app.post("/val/score_val")
+def evaluate_session_api(sesion: Sesion, zonas: List[ZonaFrecuente]):
+    zonas_convertidas = []
+    for z in zonas:
+        geom = Polygon(z.polygon)
+        zonas_convertidas.append({
+            "zone_id": z.zone_id,
+            "geometry": geom,
+            "metricas": {
+                "velocidad_media_kmh": z.metricas.velocidad_media_kmh,
+                "tiempo_medio": timedelta(hours=z.metricas.tiempo_medio) if z.metricas.tiempo_medio else None,
+                "distancia_media_km": z.metricas.distancia_media_km
+            }
+        })
+
+    sesion_dict = {
+        "lat": sesion.lat,
+        "lon": sesion.lon,
+        "velocidad_kmh": sesion.velocidad_kmh,
+        "tiempo_entre_sesiones": timedelta(hours=sesion.tiempo_entre_sesiones),
+        "distancia_km": sesion.distancia_km
+    }
+
+    evaluator = GeoScoringEvaluator()
+    return evaluator.evaluate_session(sesion_dict, zonas_convertidas)
