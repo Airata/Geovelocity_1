@@ -1,5 +1,5 @@
 from math import radians, sin, cos, sqrt, atan2
-from typing import Dict, List, Union
+from typing import Dict, Union
 from datetime import datetime, timedelta
 
 
@@ -30,7 +30,7 @@ class GeoMetricsUtils:
             }
         Retorna:
             - velocity_kmh: velocidad entre sesiones en km/h
-            - time_diff: objeto timedelta
+            - time_diff_hour: horas entre sesiones
             - distance_km: distancia entre sesiones en km
         """
         t1 = session1["datetime"]
@@ -50,30 +50,12 @@ class GeoMetricsUtils:
         velocity = distance / hours if hours > 0 else 0.0
 
         return {
-            "from_id": str(session1["session_id"]),
-            "to_id": str(session2["session_id"]),
+            "user_id": int(session2["user_id"]),
+            "from_id": int(session1["session_id"]),
+            "to_id": int(session2["session_id"]),
+            "lat_new": session2["latitude"],
+            "lon_new": session2["longitude"],
             "velocity_kmh": round(velocity, 2),
-            "time_diff": delta_t,
+            "time_diff_hour": hours,
             "distance_km": round(distance, 3)
         }
-
-    @staticmethod
-    def compare_session_list(sessions: List[Dict[str, Union[str, float, datetime]]]) -> List[Dict[str, Union[str, float, timedelta]]]:
-        """
-        Compara una lista de sesiones consecutivas y devuelve métricas entre pares.
-        Cada sesión debe tener: session_id, datetime, latitude, longitude.
-        """
-        if len(sessions) < 2:
-            raise ValueError("At least two sessions are required for comparison.")
-
-        # Ordenar por datetime por seguridad
-        sessions_sorted = sorted(sessions, key=lambda s: s["datetime"])
-        results = []
-
-        for i in range(len(sessions_sorted) - 1):
-            s1 = sessions_sorted[i]
-            s2 = sessions_sorted[i + 1]
-            metrics = GeoMetricsUtils.compare_sessions(s1, s2)
-            results.append(metrics)
-
-        return results

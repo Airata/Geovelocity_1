@@ -16,9 +16,9 @@ class GeoScoringEvaluator:
     def evaluate_session(self, new_session: Dict, frequent_zones: List[Dict]) -> Dict:
         """
         Evalúa la nueva sesión comparándola con zonas frecuentes.
-        :param new_session: diccionario con lat, lon, velocidad_kmh, tiempo_entre_sesiones_horas, distancia_km
-        :param frequent_zones: lista de zonas con "geometry" (Polygon) y "metricas" (dict)
-        :return: diccionario con score_final, zona_evaluada y si se encontró una zona candidata.
+        :param new_session: diccionario con lat, lon, velocity_kmh, time_diff, distance_km
+        :param frequent_zones: lista de zonas con "geometry" (Polygon) y "metrics" (dict)
+        :return: diccionario con score, zone_val y si se encontró zone_match.
         """
         point = Point(new_session["lon"], new_session["lat"])
         best_score = 0.0
@@ -26,7 +26,7 @@ class GeoScoringEvaluator:
 
         for zone in frequent_zones:
             geom: Polygon = zone["geometry"]
-            metrics = zone.get("metricas", {})
+            metrics = zone.get("metrics", {})
 
             if geom.contains(point):
                 score_geo = 1.0
@@ -37,12 +37,12 @@ class GeoScoringEvaluator:
                 score_geo = max(0.0, 1 - distance_km / self.max_dist_km)
 
             # Comparar métricas individuales
-            score_vel = self.compare_metric(new_session.get("velocidad_kmh"), metrics.get("velocidad_media_kmh"))
-            score_time = self.compare_metric(new_session.get("tiempo_entre_sesiones"), metrics.get("tiempo_medio"))
-            score_dist = self.compare_metric(new_session.get("distancia_km"), metrics.get("distancia_media_km"))
+            score_vel = self.compare_metric(new_session.get("velocity_kmh"), metrics.get("velocity_mean_kmh"))
+            score_time = self.compare_metric(new_session.get("time_diff_hour"), metrics.get("time_mean_hour"))
+            score_dist = self.compare_metric(new_session.get("distance_km"), metrics.get("distance_mean_km"))
 
             # Score ponderado
-            total_score = 0.7 * score_geo + 0.1 * score_vel + 0.1 * score_time + 0.1 * score_dist
+            total_score = 0.85 * score_geo + 0.05 * score_vel + 0.05 * score_time + 0.05 * score_dist
 
             if total_score > best_score:
                 best_score = total_score
@@ -54,20 +54,14 @@ class GeoScoringEvaluator:
             "zone_match": best_zone_id is not None
         }
 
-    def compare_metric(self, current_value: Optional[Union[float, timedelta]], 
-                            average_value: Optional[Union[float, timedelta]]) -> float:
+    def compare_metric(self, current_value: Optional[float], average_value: Optional[float]) -> float:
         """
         Compara un valor actual contra un promedio esperado y devuelve un score entre 0 y 1.
         Penaliza desviaciones mayores que la tolerancia relativa.
-        Soporta valores numéricos y objetos timedelta.
+        Soporta solo valores numéricos (float).
         """
         if current_value is None or average_value is None:
             return 0.5
-
-        # Si son timedelta, convertir a horas
-        if isinstance(current_value, timedelta) and isinstance(average_value, timedelta):
-            current_value = current_value.total_seconds() / 3600
-            average_value = average_value.total_seconds() / 3600
 
         if average_value == 0:
             return 0.0 if current_value > 0 else 1.0

@@ -60,7 +60,7 @@ poetry install
 ### 🌐 Ejecutar la API
 
 ```bash
-poetry run uvicorn main:app --host 0.0.0.0 --port 8000
+poetry run python main.py
 ```
 
 ## 📡 API Endpoints
@@ -84,13 +84,6 @@ La API expone los siguientes endpoints para análisis de sesiones geográficas y
 |`POST`|`/velocity/compare-last`|Compara una nueva sesión con la última sesión conocida del usuario.|
 |`POST`|`/velocity/compare-all`|Compara una lista de sesiones consecutivas y calcula distancia, tiempo y velocidad entre cada par.|
 
-**Ejemplo de uso:**
-
-- Calcular si un nuevo movimiento fue demasiado rápido para ser realista.
-    
-- Medir cambios de ubicación entre sesiones para detección de anomalías.
-    
-
 ---
 
 ### 🧭 **Clustering geográfico**
@@ -99,8 +92,5 @@ La API expone los siguientes endpoints para análisis de sesiones geográficas y
 |---|---|---|
 |`POST`|`/geo/cluster-categorize`|Aplica clustering (DBSCAN) a una lista de sesiones y clasifica cada una como `principal`, `secundario` o `ruido`.|
 
-**Ejemplo de uso:**
+---
 
-- Determinar si una sesión pertenece al comportamiento geográfico habitual del usuario.
-    
-- Detectar ubicaciones anómalas o fuera del patrón.
